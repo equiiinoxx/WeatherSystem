@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherScope | Meteorological Data Analytics Platform</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Enterprise Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                </svg>
+            </div>
+            <div>
+                <span class="brand-title">WeatherScope</span>
+                <span class="brand-tag">Enterprise Analytics</span>
+            </div>
+        </div>
+
+        <nav class="nav-links">
+            <a href="#ingestion" class="nav-link active">Ingestion</a>
+            <a href="#audit" class="nav-link">Quality Audit</a>
+            <a href="#visuals" class="nav-link">Visual Analytics</a>
+            <a href="#summary" class="nav-link">Monthly Summary</a>
+            <a href="#database" class="nav-link">MySQL Explorer</a>
+        </nav>
+
+        <div class="nav-right">
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                <span>MySQL Connected</span>
+            </div>
+            <button id="btnQuickSample" class="btn btn-sm btn-ghost">
+                🧪 Load Sample Data
+            </button>
+            <button id="btnPurgeDb" class="btn btn-sm btn-danger-outline">
+                🗑️ Clear DB
+            </button>
+        </div>
+    </header>
+
+    <!-- Sub-header Metric Bar -->
+    <section class="metric-subheader">
+        <div class="container subheader-content">
+            <div class="project-scope">
+                <span class="scope-label">SYSTEM SCOPE</span>
+                <p>Exploratory Analysis of Recorded Weather Observations &bull; Non-Forecasting Platform</p>
+            </div>
+            <div class="documented-units">
+                <span class="unit-tag">🌡️ Temp: <strong>°C</strong></span>
+                <span class="unit-tag">💧 Humidity: <strong>%</strong></span>
+                <span class="unit-tag">🌧️ Rainfall: <strong>mm</strong></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Container -->
+    <main class="container page-body">
+
+        <!-- 1. DATA INGESTION STATION -->
+        <section id="ingestion" class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">1. Data Ingestion & Pipeline Station</h2>
+                    <p class="panel-desc">Ingest daily weather observations via CSV format. Standard fields: <code>observation_date</code>, <code>location</code>, <code>temperature</code>, <code>humidity</code>, <code>rainfall</code>.</p>
+                </div>
+                <div class="panel-badge">Batch Processor</div>
+            </div>
+
+            <div class="ingestion-grid">
+                <!-- Dropzone Area -->
+                <div class="dropzone" id="dropZone">
+                    <input type="file" id="csvFileInput" accept=".csv" class="file-input-hidden">
+                    <div class="dropzone-inner">
+                        <div class="drop-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <p class="drop-primary-text">Drag & drop your Weather CSV here, or <span class="browse-link">browse files</span></p>
+                        <p class="drop-sub-text">Supported format: .csv (UTF-8 encoded) &bull; Max 20MB</p>
+                        <div id="fileSelectedBadge" class="file-badge" style="display: none;">
+                            <span class="file-icon">📄</span>
+                            <span id="fileNameDisplay">weather_data.csv</span>
+                            <span id="fileSizeDisplay"></span>
+                            <button type="button" id="btnRemoveFile" class="btn-remove-file" title="Remove selected file" aria-label="Remove selected file">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Action Controls -->
+                <div class="pipeline-controls">
+                    <div class="pipeline-card">
+                        <h3>Automated Processing Steps</h3>
+                        <ul class="pipeline-steps">
+                            <li><span class="step-num">1</span> Strict Schema & Type Validation</li>
+                            <li><span class="step-num">2</span> Anomaly & Outlier Sanitization</li>
+                            <li><span class="step-num">3</span> Transactional MySQL Ingestion</li>
+                            <li><span class="step-num">4</span> NumPy & Pandas Monthly Grouping</li>
+                            <li><span class="step-num">5</span> Matplotlib Visual Rendering</li>
+                        </ul>
+                    </div>
+
+                    <div class="pipeline-actions">
+                        <button id="btnExecutePipeline" class="btn btn-primary btn-block">
+                            ⚡ Run Ingestion & Analysis
+                        </button>
+                        <button id="btnLoadSample" class="btn btn-secondary btn-block">
+                            📂 Ingest Bundled Sample Dataset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Notification / Status Alert -->
+            <div id="statusAlert" class="alert" style="display: none;"></div>
+        </section>
+
+        <!-- Loading Processing Bar -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="loading-card">
+                <div class="spinner-industrial"></div>
+                <h3>Processing Meteorological Pipeline...</h3>
+                <p>Validating observation data, recording to MySQL, and computing monthly statistics</p>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION (Active upon processing) -->
+        <div id="dashboardResults" style="display: none;">
+
+            <!-- 2. DATA QUALITY AUDIT REPORT -->
+            <section id="audit" class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title">2. Data Quality & Integrity Audit</h2>
+                        <p class="panel-desc">Transparent validation telemetry. Records containing missing or anomalous values are flagged and quarantined.</p>
+                    </div>
+                    <span class="pill pill-info">Observability Report</span>
+                </div>
+
+                <!-- KPI Metric Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-blue">📊</div>
+                        <div>
+                            <span class="kpi-label">TOTAL INGESTED</span>
+                            <span class="kpi-value" id="kpiTotal">0</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-green">✅</div>
+                        <div>
+                            <span class="kpi-label">VALIDATED RECORDS</span>
+                            <span class="kpi-value text-green" id="kpiValid">0</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-red">⚠️</div>
+                        <div>
+                            <span class="kpi-label">ANOMALIES EXCLUDED</span>
+                            <span class="kpi-value text-red" id="kpiInvalid">0</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-purple">🎯</div>
+                        <div>
+                            <span class="kpi-label">QUALITY SCORE</span>
+                            <span class="kpi-value" id="kpiScore">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anomaly Quarantine Table -->
+                <div id="quarantineSection" class="quarantine-box" style="display: none;">
+                    <div class="quarantine-header">
+                        <h4>Quarantined Observation Log</h4>
+                        <span class="badge badge-warning">Transparent Audit</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table audit-table">
+                            <thead>
+                                <tr>
+                                    <th>CSV Row</th>
+                                    <th>Identified Validation Failures</th>
+                                    <th>Observed Raw Row Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quarantineTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. VISUAL ANALYTICS -->
+            <section id="visuals" class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title">3. Meteorological Visual Analytics</h2>
+                        <p class="panel-desc">Visualizing temperature trajectories and precipitation volumes generated via Matplotlib rendering engine.</p>
+                    </div>
+                    <span class="pill pill-primary">Matplotlib Engine</span>
+                </div>
+
+                <div class="visuals-grid">
+                    <div class="chart-panel">
+                        <div class="chart-panel-header">
+                            <div>
+                                <h3 class="chart-heading">Temperature Trend (°C)</h3>
+                                <p class="chart-sub">Min, Mean, and Max monthly temperature trajectories</p>
+                            </div>
+                            <button class="btn btn-xs btn-outline" id="btnDownloadTemp">⬇️ Save Plot</button>
+                        </div>
+                        <div class="chart-wrapper">
+                            <img id="imgTempChart" src="" alt="Temperature Trend Chart" class="chart-image">
+                        </div>
+                    </div>
+
+                    <div class="chart-panel">
+                        <div class="chart-panel-header">
+                            <div>
+                                <h3 class="chart-heading">Monthly Rainfall Comparison (mm)</h3>
+                                <p class="chart-sub">Cumulative monthly precipitation comparison</p>
+                            </div>
+                            <button class="btn btn-xs btn-outline" id="btnDownloadRain">⬇️ Save Plot</button>
+                        </div>
+                        <div class="chart-wrapper">
+                            <img id="imgRainChart" src="" alt="Monthly Rainfall Comparison Chart" class="chart-image">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. MONTHLY WEATHER SUMMARY TABLE -->
+            <section id="summary" class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title">4. Monthly Weather Summary</h2>
+                        <p class="panel-desc">Aggregated statistics calculated via Pandas grouping and NumPy statistical calculations (Min, Max, Mean).</p>
+                    </div>
+                    <div class="filter-box">
+                        <input type="text" id="summarySearchInput" placeholder="Filter by Month or Location..." class="table-search">
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table summary-table" id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th>Observation Month</th>
+                                <th>Location</th>
+                                <th>Days</th>
+                                <th>Min Temp (°C)</th>
+                                <th>Max Temp (°C)</th>
+                                <th>Avg Temp (°C)</th>
+                                <th>Min Hum (%)</th>
+                                <th>Max Hum (%)</th>
+                                <th>Avg Hum (%)</th>
+                                <th>Total Rain (mm)</th>
+                                <th>Avg Rain (mm)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 5. MYSQL DATABASE EXPLORER -->
+            <section id="database" class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title">5. MySQL Live Explorer (<code>weather_records</code>)</h2>
+                        <p class="panel-desc">Active state of SQL entity: <code>weather_records(record_id, observation_date, location, temperature, humidity, rainfall)</code>.</p>
+                    </div>
+                    <div class="db-actions">
+                        <button id="btnRefreshExplorer" class="btn btn-sm btn-outline">🔄 Refresh</button>
+                        <button id="btnTruncateExplorer" class="btn btn-sm btn-danger-outline">🗑️ Truncate Table</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="dbExplorerTable">
+                        <thead>
+                            <tr>
+                                <th>Record ID</th>
+                                <th>Observation Date</th>
+                                <th>Location</th>
+                                <th>Temperature (°C)</th>
+                                <th>Humidity (%)</th>
+                                <th>Rainfall (mm)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dbExplorerTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Industrial Platform Footer -->
+    <footer class="app-footer">
+        <div class="container footer-content">
+            <div class="footer-left">
+                <strong>WeatherScope Analytics Platform</strong> &bull; College Meteorological Data System
+            </div>
+            <div class="footer-right">
+                <span>Architecture: Python (Flask) &bull; Vanilla JS &bull; CSS3 Grid &bull; MySQL Server</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

@@ -165,6 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 showAlert('Database table "weather_records" truncated successfully. All records cleared.', 'success');
+                dashboardResults.style.display = 'none';
+                currentSummaryData = [];
                 fetchDbRecords();
             } else {
                 showAlert(`Failed to clear database: ${data.error}`, 'error');
@@ -180,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRefreshExplorer.addEventListener('click', () => fetchDbRecords());
 
     // --- Render Dashboard Telemetry ---
-    function renderTelemetry(data) {
+    function renderTelemetry(data, shouldScroll = true) {
         dashboardResults.style.display = 'block';
 
         // 1. KPI Telemetry
@@ -231,10 +233,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSummaryTable(currentSummaryData);
 
         // 5. Query MySQL Database Records
-        fetchDbRecords();
+        if (data.records) {
+            renderDbTable(data.records);
+        } else {
+            fetchDbRecords();
+        }
 
-        // Smooth scroll to results
-        dashboardResults.scrollIntoView({ behavior: 'smooth' });
+        // Smooth scroll to results (only when requested, not on initial load)
+        if (shouldScroll) {
+            dashboardResults.scrollIntoView({ behavior: 'smooth' });
+        }
     }
 
     // --- Filter Monthly Summary Table ---
@@ -278,29 +286,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Render MySQL Records Table ---
+    function renderDbTable(records) {
+        dbExplorerTableBody.innerHTML = '';
+        if (!records || records.length === 0) {
+            dbExplorerTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No records currently stored in weather_records table.</td></tr>';
+            return;
+        }
+        records.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>#${r.record_id}</td>
+                <td>${r.observation_date}</td>
+                <td>${r.location}</td>
+                <td>${r.temperature !== null ? `${r.temperature} °C` : '-'}</td>
+                <td>${r.humidity !== null ? `${r.humidity} %` : '-'}</td>
+                <td>${r.rainfall !== null ? `${r.rainfall} mm` : '-'}</td>
+            `;
+            dbExplorerTableBody.appendChild(tr);
+        });
+    }
+
     // --- Fetch MySQL Records Explorer ---
     async function fetchDbRecords() {
         try {
             const res = await fetch(`${API_BASE}/api/records`);
             const data = await res.json();
             if (data.success && data.records) {
-                dbExplorerTableBody.innerHTML = '';
-                if (data.records.length === 0) {
-                    dbExplorerTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No records currently stored in weather_records table.</td></tr>';
-                    return;
-                }
-                data.records.forEach(r => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>#${r.record_id}</td>
-                        <td>${r.observation_date}</td>
-                        <td>${r.location}</td>
-                        <td>${r.temperature !== null ? `${r.temperature} °C` : '-'}</td>
-                        <td>${r.humidity !== null ? `${r.humidity} %` : '-'}</td>
-                        <td>${r.rainfall !== null ? `${r.rainfall} mm` : '-'}</td>
-                    `;
-                    dbExplorerTableBody.appendChild(tr);
-                });
+                renderDbTable(data.records);
             }
         } catch (err) {
             console.error('Failed to query DB explorer:', err);
@@ -334,6 +347,23 @@ document.addEventListener('DOMContentLoaded', () => {
         statusAlert.style.display = 'block';
     }
 
-    // Initial check on database records
-    fetchDbRecords();
+    // --- Initial State: Load Persistent Data Directly from MySQL ---
+    async function loadInitialDashboardState() {
+        try {
+            const res = await fetch(`${API_BASE}/api/dashboard`);
+            const data = await res.json();
+            if (data.success && data.has_data) {
+                renderTelemetry(data, false); // Don't scroll on initial load
+                showAlert(`Loaded ${data.quality_report.total_records} historical meteorological records directly from MySQL database.`, 'info');
+            } else {
+                fetchDbRecords();
+            }
+        } catch (err) {
+            console.error('Failed to load initial dashboard state:', err);
+            fetchDbRecords();
+        }
+    }
+
+    // Run initial state loader on page startup
+    loadInitialDashboardState();
 });
